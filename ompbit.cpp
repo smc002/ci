@@ -44,7 +44,7 @@ int main()
 	/*
  	* Open file to get directory
  	*/
-	pmat = matOpen("./config_sorted.mat", "r");
+	pmat = matOpen("./config_unsorted.mat", "r");
 	if (pmat == NULL) {
   		printf("Error opening file.\n");
   		return(1);
@@ -97,7 +97,7 @@ int main()
     ResSparse0 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER*2,mxREAL);
     //ResSparse0 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
 	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse0);	
-    ResSparse1 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER*2,mxREAL);
+    ResSparse1 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
 	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse1);	
     ResSparse2 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
 	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse2);	
@@ -159,7 +159,6 @@ int main()
 
 	/* cal diag */
     for (j=begin; (j<end); j++ ) {
-		BArray+=M;
         jcs[j] = k;
 		
 		pr = 0;
@@ -171,6 +170,7 @@ int main()
 		sr[k] = pr/2;
 		irs[k] = j;
 		k++;
+		BArray+=M;
 
 		/* cal others */
         for (i=j+1; (i<CONFIG_SIZE); i++) {
