@@ -1,7 +1,7 @@
 //guji size of sparse
-//step = thread_number
-//crash on sorted
-//put in the para
+//step = thread_number -done. inefficient at line 170: if (j%THREAD_NUMBER != tid)
+//crash on sorted -done.
+//put in the para -done.
 //
 //eigs
 #define __STDC_FORMAT_MACROS
@@ -23,11 +23,11 @@
 
 #define THREAD_NUMBER 4
 
+
 int main()
 {
 	/* Variables to read mat file. */
 	MATFile *pmat;
-	const char **dir;
 	const char *name;
 	int	  ndir;
 	int	  i,j;
@@ -91,60 +91,65 @@ int main()
 	
 	printf("para begin!\n");	
 
-	//todo 
-	mxArray *ResSparse0, *ResSparse1, *ResSparse2, *ResSparse3;
+	//todo: use #define to do the decalaration
+//	mxArray *ResSparse0, *ResSparse1, *ResSparse2, *ResSparse3;
+	mxArray *ResSparse[THREAD_NUMBER];
 	MATFile *pmatpara;
-    ResSparse0 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER*2,mxREAL);
+	for (i=0;i<THREAD_NUMBER;i++)
+	{
+    ResSparse[i] = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
     //ResSparse0 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
-	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse0);	
-    ResSparse1 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
-	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse1);	
-    ResSparse2 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
-	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse2);	
-    ResSparse3 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
-	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse3);	
-	#pragma omp parallel shared(E,J) private(i,j) num_threads(THREAD_NUMBER)
+	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse[i]);	
+	}
+//    ResSparse1 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
+//	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse1);	
+//    ResSparse2 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
+//	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse2);	
+//    ResSparse3 = mxCreateSparse(CONFIG_SIZE,CONFIG_SIZE,nzmax/THREAD_NUMBER,mxREAL);
+//	printf("Try to create sparse! p = %lld\n", (long long int)ResSparse3);	
+	
+	#pragma omp parallel shared(E,J,ResSparse) private(i,j) num_threads(THREAD_NUMBER)
 {
 	/* Create a sparse matrix using matlab functions */
 	int tid = omp_get_thread_num();
     mwIndex *irs,*jcs;
     double *sr;
-	int begin,end;
+    sr  = mxGetPr(ResSparse[tid]);
+    irs = mxGetIr(ResSparse[tid]);
+    jcs = mxGetJc(ResSparse[tid]);
 
-	switch (tid)
-	{
-		case 0:
-    sr  = mxGetPr(ResSparse0);
-    irs = mxGetIr(ResSparse0);
-    jcs = mxGetJc(ResSparse0);
-	begin = 0, end = CONFIG_SIZE/THREAD_NUMBER;
-	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
-	break;
-
-		case 1:
-    sr  = mxGetPr(ResSparse1);
-    irs = mxGetIr(ResSparse1);
-    jcs = mxGetJc(ResSparse1);
-	begin = CONFIG_SIZE/THREAD_NUMBER, end = CONFIG_SIZE/THREAD_NUMBER*2;
-	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
-	break;
-		case 2:
-    sr  = mxGetPr(ResSparse2);
-    irs = mxGetIr(ResSparse2);
-    jcs = mxGetJc(ResSparse2);
-	begin = CONFIG_SIZE/THREAD_NUMBER*2, end = CONFIG_SIZE/THREAD_NUMBER*3;
-	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
-	break;
-		case 3:
-    sr  = mxGetPr(ResSparse3);
-    irs = mxGetIr(ResSparse3);
-    jcs = mxGetJc(ResSparse3);
-	begin = CONFIG_SIZE/THREAD_NUMBER*3, end = CONFIG_SIZE;
-	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
-	break;
-	}
-    for (j=0; (j<begin); j++ ) 
-        jcs[j] = 0;
+//this is not needed now.
+//	int begin, end;
+//	begin = tid;//tid 0 start with j=0; tid 1 start with j=1; and so on.
+//	switch (tid)
+//	{
+//		case 0:
+//	begin = 0, end = CONFIG_SIZE/THREAD_NUMBER;
+//	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
+//	break;
+//
+//		case 1:
+//    sr  = mxGetPr(ResSparse[tid]);
+//    irs = mxGetIr(ResSparse[tid]);
+//    jcs = mxGetJc(ResSparse[tid]);
+//	begin = CONFIG_SIZE/THREAD_NUMBER, end = CONFIG_SIZE/THREAD_NUMBER*2;
+//	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
+//	break;
+//		case 2:
+//    sr  = mxGetPr(ResSparse[tid]);
+//    irs = mxGetIr(ResSparse[tid]);
+//    jcs = mxGetJc(ResSparse[tid]);
+//	begin = CONFIG_SIZE/THREAD_NUMBER*2, end = CONFIG_SIZE/THREAD_NUMBER*3;
+//	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
+//	break;
+//		case 3:
+//    sr  = mxGetPr(ResSparse[tid]);
+//    irs = mxGetIr(ResSparse[tid]);
+//    jcs = mxGetJc(ResSparse[tid]);
+//	begin = CONFIG_SIZE/THREAD_NUMBER*3, end = CONFIG_SIZE;
+//	printf("Calculate the begin/end number. tid=%d. begin=%d, end=%d\n",tid,begin,end);	
+//	break;
+//	}
 
 	/* Real Calculation */
 	double pr;
@@ -152,14 +157,18 @@ int main()
 	uint64_t DiffNumber;
 	int a, b;
 	int DiffInd[4];
-	unsigned char* BArray = config + begin*M;//*sizeof(unsigned char);
+	//unsigned char* BArray = config + tid*M;//*sizeof(unsigned char);
+	unsigned char* BArray;//*sizeof(unsigned char);
 	printf("hello from tid %d! Cal begin now\n", tid);	
 //		for (a=0; a<M; a++)
 //	printf("hello from tid %d! The 1st config is %d\n", tid, (int)BArray[a]);	
 
 	/* cal diag */
-    for (j=begin; (j<end); j++ ) {
+//    for (j=tid, BArray = config + tid*M; (j<CONFIG_SIZE); j+=THREAD_NUMBER,BArray+=M*THREAD_NUMBER ) {
+    for (j=0,BArray = config; (j<CONFIG_SIZE); j+=1,BArray+=M) {
         jcs[j] = k;
+		if (j%THREAD_NUMBER != tid)
+			continue;
 		
 		pr = 0;
 		for (a=0; a<M; a++)
@@ -170,7 +179,6 @@ int main()
 		sr[k] = pr/2;
 		irs[k] = j;
 		k++;
-		BArray+=M;
 
 		/* cal others */
         for (i=j+1; (i<CONFIG_SIZE); i++) {
@@ -259,44 +267,50 @@ int main()
 				sr[k] = pr;
 				irs[k] = i;
 				k++;
-//	printf("hello from tid %d! k = %d, i = %d, j = %d, pr = %f\n", tid,k,i,j,pr);	
+	//printf("hello from tid %d! k = %d, i = %d, j = %d, pr = %f\n", tid,k,i,j,pr);	
 //				if ((j==12012))//&&(i%(1<<4)== 0))
 //	printf("hello from tid %d! k = %d, i = %d, j = %d\n", tid,k,i,j);	
 			}
 		}
 	}
+    jcs[j] = k;
 
-    for (j=end; (j<=CONFIG_SIZE); j++ ) 
-        jcs[j] = k;
 	printf("tid %d cal end! k = %d\n", tid,k);	
 }
 //end of OpenMP para cal
 
 	/* Save the sparse matrix. */
 	//#pragma omp critical
-	pmatpara = matOpen("./Res_forBit0.mat", "w");
-	printf("put res0 returns %d\n", matPutVariable(pmatpara, "res0", ResSparse0));
-	mxDestroyArray(ResSparse0);
+	char filename[30];
+	char varname[30];
+	for(i=0;i<THREAD_NUMBER;i++)
+	{
+	sprintf(filename, "./Res_forBit%d.mat",i);
+	sprintf(varname, "res%d",i);
+	pmatpara = matOpen(filename, "w");
+	printf("put res%d returns %d\n", i, matPutVariable(pmatpara, varname, ResSparse[i]));
+	mxDestroyArray(ResSparse[i]);
 	matClose(pmatpara);
-	printf("File 0 is saved!\n");	
+	printf("File %d is saved!\n",i);	
+	}
 
-	pmatpara = matOpen("./Res_forBit1.mat", "w");
-	printf("put res1 returns %d\n", matPutVariable(pmatpara, "res1", ResSparse1));
-	mxDestroyArray(ResSparse1);
-	matClose(pmatpara);
-	printf("File 1 is saved!\n");	
-
-	pmatpara = matOpen("./Res_forBit2.mat", "w");
-	printf("put res2 returns %d\n", matPutVariable(pmatpara, "res2", ResSparse2));
-	mxDestroyArray(ResSparse2);
-	matClose(pmatpara);
-	printf("File 2 is saved!\n");	
-
-	pmatpara = matOpen("./Res_forBit3.mat", "w");
-	printf("put res3 returns %d\n", matPutVariable(pmatpara, "res3", ResSparse3));
-	mxDestroyArray(ResSparse3);
-	matClose(pmatpara);
-	printf("File 3 is saved!\n");	
+//	pmatpara = matOpen("./Res_forBit1.mat", "w");
+//	printf("put res1 returns %d\n", matPutVariable(pmatpara, "res1", ResSparse[1]));
+//	mxDestroyArray(ResSparse[1]);
+//	matClose(pmatpara);
+//	printf("File 1 is saved!\n");	
+//
+//	pmatpara = matOpen("./Res_forBit2.mat", "w");
+//	printf("put res2 returns %d\n", matPutVariable(pmatpara, "res2", ResSparse[2]));
+//	mxDestroyArray(ResSparse[2]);
+//	matClose(pmatpara);
+//	printf("File 2 is saved!\n");	
+//
+//	pmatpara = matOpen("./Res_forBit3.mat", "w");
+//	printf("put res3 returns %d\n", matPutVariable(pmatpara, "res3", ResSparse[3]));
+//	mxDestroyArray(ResSparse[3]);
+//	matClose(pmatpara);
+//	printf("File 3 is saved!\n");	
 
 //	printf("hello from tid %d! j= %d\n", tid,j);	
 //	pmatpara = matOpen("./Res_forBit2.mat", "w");
